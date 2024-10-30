@@ -1,0 +1,55 @@
+{
+  "name": "@racsodev/cv-pdf-to-json",
+  "version": "1.0.0",
+  "description": "Node.js library that extracts CV/resume data from PDF files and converts it to structured JSON.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "process": "ts-node src/devProcessCmd.ts",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\""
+  },
+  "keywords": [
+    "cv",
+    "resume",
+    "extract",
+    "claude",
+    "ai",
+    "pdf",
+    "json",
+    "typescript"
+  ],
+  "author": "Oscar Rénier",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.1",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.0",
+    "@types/node": "^20.11.24",
+    "@types/pdf-parse": "^1.1.4",
+    "dotenv": "^16.4.5",
+    "prettier": "^3.3.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.4.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/racso-dev/cv-pdf-to-json.git"
+  },
+  "directories": {
+    "doc": "docs"
+  },
+  "bugs": {
+    "url": "https://github.com/racso-dev/cv-pdf-to-json/issues"
+  },
+  "homepage": "https://github.com/racso-dev/cv-pdf-to-json#readme"
+}
