@@ -84,6 +84,9 @@ const processItem = (item: any): any => {
   // Calculate duration if both dates are present
   if (processedItem.startDate && processedItem.endDate) {
     processedItem.duration = calculateDurationInMonths(processedItem.startDate, processedItem.endDate, formatOfEndDate)
+  } else if (processedItem.startDate) {
+    // Calculate duration until now if only start date is present
+    processedItem.duration = calculateDurationInMonths(processedItem.startDate, new Date(), formatOfStartDate)
   }
 
   return processedItem
