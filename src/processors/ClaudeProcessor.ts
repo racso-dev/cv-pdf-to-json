@@ -1,17 +1,19 @@
 import { Anthropic } from '@anthropic-ai/sdk'
 import LLMProcessor from './LLMProcessor'
-import { ProcessorOptions, SanitizedProcessorResult, ParsedProcessorResult, CvData, ProcessorResult } from '../types'
-
-interface ClaudeProcessorOptions extends ProcessorOptions {
-  apiKey: string
-  baseUrl?: string
-}
+import { ProcessorResult, SanitizedProcessorResult, ParsedProcessorResult, CvData } from '../types'
+import { ClaudeProcessorOptions, ClaudeConfig, DEFAULT_CLAUDE_CONFIG } from '../types/claude'
+import { CvDataBuilder } from '../utils/CvDataBuilder'
 
 class ClaudeProcessor extends LLMProcessor {
   private anthropic: Anthropic
+  private config: ClaudeConfig
 
   constructor(options: ClaudeProcessorOptions) {
     super(options)
+    this.config = {
+      ...DEFAULT_CLAUDE_CONFIG,
+      ...options.config,
+    }
     this.anthropic = new Anthropic({
       apiKey: options.apiKey,
       ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
@@ -33,7 +35,6 @@ class ClaudeProcessor extends LLMProcessor {
     partialData: Partial<CvData>
   } {
     const shouldContinueCmd = response.includes('<continue_cmd/>') && !response.includes('<end_cmd/>')
-    // Check for partial data
     const partialMatch = response.match(/<partial_data>([\s\S]*?)<\/partial_data>/)
     if (partialMatch) {
       try {
@@ -48,58 +49,37 @@ class ClaudeProcessor extends LLMProcessor {
     throw new Error('No CV JSON or partial data found in response')
   }
 
-  private mergePartialData(existing: Partial<CvData> | null, partial: Partial<CvData>): Partial<CvData> {
-    if (!existing) return partial
+  private async processWithClaude(prompt: string, maxIterations: number): Promise<{ role: 'assistant'; content: string }[]> {
+    const messageHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
+    let shouldContinue: boolean
 
-    const merged: Partial<CvData> = { ...existing }
+    do {
+      messageHistory.push({
+        role: 'user',
+        content: messageHistory.length === 0 ? prompt : 'continue',
+      })
 
-    // Type-safe array merging for each array field
-    if (partial.professionalExperiences) {
-      merged.professionalExperiences = [...(existing.professionalExperiences || []), ...partial.professionalExperiences]
-    }
-    if (partial.otherExperiences) {
-      merged.otherExperiences = [...(existing.otherExperiences || []), ...partial.otherExperiences]
-    }
-    if (partial.educations) {
-      merged.educations = [...(existing.educations || []), ...partial.educations]
-    }
-    if (partial.hardSkills) {
-      merged.hardSkills = [...(existing.hardSkills || []), ...partial.hardSkills]
-    }
-    if (partial.softSkills) {
-      merged.softSkills = [...(existing.softSkills || []), ...partial.softSkills]
-    }
-    if (partial.languages) {
-      merged.languages = [...(existing.languages || []), ...partial.languages]
-    }
-    if (partial.publications) {
-      merged.publications = [...(existing.publications || []), ...partial.publications]
-    }
-    if (partial.distinctions) {
-      merged.distinctions = [...(existing.distinctions || []), ...partial.distinctions]
-    }
-    if (partial.hobbies) {
-      merged.hobbies = [...(existing.hobbies || []), ...partial.hobbies]
-    }
-    if (partial.references) {
-      merged.references = [...(existing.references || []), ...partial.references]
-    }
+      const message = await this.anthropic.beta.promptCaching.messages.create({
+        max_tokens: this.config.maxTokens,
+        messages: messageHistory,
+        model: this.config.model,
+        temperature: this.config.temperature,
+      })
 
-    // Merge scalar fields
-    if (partial.lastName) merged.lastName = partial.lastName
-    if (partial.firstName) merged.firstName = partial.firstName
-    if (partial.address) merged.address = partial.address
-    if (partial.email) merged.email = partial.email
-    if (partial.phone) merged.phone = partial.phone
-    if (partial.linkedin) merged.linkedin = partial.linkedin
-    if (partial.github) merged.github = partial.github
-    if (partial.personalWebsite) merged.personalWebsite = partial.personalWebsite
-    if (partial.professionalSummary) merged.professionalSummary = partial.professionalSummary
-    if (partial.school) merged.school = partial.school
-    if (partial.schoolLowerCase) merged.schoolLowerCase = partial.schoolLowerCase
-    if (partial.promotionYear) merged.promotionYear = partial.promotionYear
+      const textContent = message.content.find((block) => block.type === 'text')
+      const rawResponse = textContent?.text || ''
+      messageHistory.push({ role: 'assistant', content: rawResponse })
 
-    return merged
+      if (this.debug) {
+        console.log('\n=== Raw answer from Claude ===')
+        console.log(rawResponse)
+        console.log('===============================\n')
+      }
+
+      shouldContinue = rawResponse.includes('<continue_cmd/>') && !rawResponse.includes('<end_cmd/>')
+    } while (messageHistory.length < maxIterations && shouldContinue)
+
+    return messageHistory.filter((msg) => msg.role === 'assistant') as { role: 'assistant'; content: string }[]
   }
 
   async process<T>(text: string): Promise<ProcessorResult<T>> {
@@ -108,40 +88,8 @@ class ClaudeProcessor extends LLMProcessor {
 
   async sanitize(prompt: string): Promise<SanitizedProcessorResult> {
     try {
-      let sanitizedText = ''
-      let messageHistory: Array<{
-        role: 'user' | 'assistant'
-        content: string
-      }> = []
-      let shouldContinue
-
-      do {
-        messageHistory.push({
-          role: 'user',
-          content: messageHistory.length === 0 ? prompt : 'continue',
-        })
-        const message = await this.anthropic.beta.promptCaching.messages.create({
-          max_tokens: 8192,
-          messages: messageHistory,
-          model: 'claude-3-5-sonnet-latest',
-        })
-
-        const textContent = message.content.find((block) => block.type === 'text')
-
-        const rawResponse = textContent?.text || ''
-        messageHistory.push({ role: 'assistant', content: rawResponse })
-
-        if (this.debug) {
-          console.log('\n=== Raw answer from Claude ===')
-          console.log(rawResponse)
-          console.log('===============================\n')
-        }
-
-        const { text: extractedText, shouldContinueCmd } = this.extractSanitizedText(rawResponse)
-
-        sanitizedText += extractedText
-        shouldContinue = shouldContinueCmd
-      } while (messageHistory.length < 10 && shouldContinue)
+      const responses = await this.processWithClaude(prompt, 10)
+      const sanitizedText = responses.map((msg) => this.extractSanitizedText(msg.content).text).join('')
 
       return {
         success: true,
@@ -157,51 +105,53 @@ class ClaudeProcessor extends LLMProcessor {
 
   async parse(prompt: string): Promise<ParsedProcessorResult> {
     try {
-      let messageHistory: Array<{
-        role: 'user' | 'assistant'
-        content: string
-      }> = []
-      let shouldContinue
-      let accumulatedData: Partial<CvData> | null = null
+      const responses = await this.processWithClaude(prompt, 15)
+      const builder = new CvDataBuilder()
 
-      do {
-        messageHistory.push({
-          role: 'user',
-          content: messageHistory.length === 0 ? prompt : 'continue',
-        })
-        const message = await this.anthropic.beta.promptCaching.messages.create({
-          max_tokens: 8192,
-          messages: messageHistory,
-          model: 'claude-3-5-sonnet-latest',
-        })
+      for (const response of responses) {
+        const { partialData } = this.extractCvPartialData(response.content)
 
-        const textContent = message.content.find((block) => block.type === 'text')
-
-        const rawResponse = textContent?.text || ''
-        messageHistory.push({ role: 'assistant', content: rawResponse })
-
-        if (this.debug) {
-          console.log('\n=== Raw answer from Claude ===')
-          console.log(rawResponse)
-          console.log('===============================\n')
+        // Build CV data progressively
+        if ('lastName' in partialData || 'firstName' in partialData) {
+          builder.withPersonalInfo(partialData as any)
         }
+        if ('linkedin' in partialData || 'github' in partialData || 'personalWebsite' in partialData) {
+          builder.withSocialLinks(partialData as any)
+        }
+        if ('professionalSummary' in partialData) {
+          builder.withProfessionalInfo(partialData as any)
+        }
+        if ('school' in partialData) {
+          builder.withSchoolInfo(partialData as any)
+        }
+        if ('professionalExperiences' in partialData || 'otherExperiences' in partialData) {
+          builder.withExperiences(partialData.professionalExperiences || [], partialData.otherExperiences || [])
+        }
+        if ('educations' in partialData) {
+          builder.withEducation(partialData.educations || [])
+        }
+        if ('hardSkills' in partialData || 'softSkills' in partialData) {
+          builder.withSkills(partialData.hardSkills || [], partialData.softSkills || [])
+        }
+        if ('languages' in partialData) {
+          builder.withLanguages(partialData.languages || [])
+        }
+        if ('publications' in partialData || 'distinctions' in partialData || 'hobbies' in partialData || 'references' in partialData) {
+          builder.withExtras(partialData as any)
+        }
+      }
 
-        const { shouldContinueCmd, partialData } = this.extractCvPartialData(rawResponse)
-
-        accumulatedData = this.mergePartialData(accumulatedData, partialData)
-        shouldContinue = shouldContinueCmd
-      } while (messageHistory.length < 15 && shouldContinue)
-
-      if (!this.isCompleteCvData(accumulatedData)) {
+      const cvData = builder.build()
+      if (!cvData) {
         return {
           success: false,
-          error: 'Incomplete CV data received',
+          error: 'Failed to build complete CV data',
         }
       }
 
       return {
         success: true,
-        data: accumulatedData,
+        data: cvData,
       }
     } catch (error) {
       return {
@@ -209,37 +159,6 @@ class ClaudeProcessor extends LLMProcessor {
         error: error instanceof Error ? error.message : 'An unknown error occurred',
       }
     }
-  }
-
-  private isCompleteCvData(data: Partial<CvData> | null): data is CvData {
-    if (!data) return false
-
-    const requiredFields: (keyof CvData)[] = [
-      'lastName',
-      'firstName',
-      'address',
-      'email',
-      'phone',
-      'linkedin',
-      'github',
-      'personalWebsite',
-      'professionalSummary',
-      'school',
-      'schoolLowerCase',
-      'promotionYear',
-      'professionalExperiences',
-      'otherExperiences',
-      'educations',
-      'hardSkills',
-      'softSkills',
-      'languages',
-      'publications',
-      'distinctions',
-      'hobbies',
-      'references',
-    ]
-
-    return requiredFields.every((field) => field in data)
   }
 }
 
