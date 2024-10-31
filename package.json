@@ -1,6 +1,6 @@
 {
   "name": "@racsodev/cv-pdf-to-json",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Node.js library that extracts CV/resume data from PDF files and converts it to structured JSON.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
