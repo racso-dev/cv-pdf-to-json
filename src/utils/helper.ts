@@ -108,22 +108,6 @@ export const postProcessing = (data: any): any => {
   return data
 }
 
-export const saveRawTxt = (basePath: string | undefined, filePath: string, text: string): void => {
-  const outputPath = getOutputPath(basePath, path.basename(filePath), '.txt')
-  if (outputPath) {
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true })
-    fs.writeFileSync(outputPath, text)
-  }
-}
-
-export const saveSanitizedTxt = (basePath: string | undefined, filePath: string, text: string): void => {
-  const outputPath = getOutputPath(basePath, path.basename(filePath), '.txt')
-  if (outputPath) {
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true })
-    fs.writeFileSync(outputPath, text)
-  }
-}
-
 export const saveJson = (basePath: string | undefined, filePath: string, data: any): void => {
   const outputPath = getOutputPath(basePath, path.basename(filePath), '.json')
   if (outputPath) {

@@ -1,25 +1,17 @@
 import fs from 'fs'
 import path from 'path'
 import Processor from './Processor'
-import { sanitizePrompt } from '../utils/sanitizePrompt'
-import { parsePrompt } from '../utils/parsePrompt'
-import { DocumentProcessorOptions, DirectoryProcessOptions, SanitizedProcessorResult, ParsedProcessorResult, Extractor } from '../types'
-import { postProcessing, saveJson, saveRawTxt, saveSanitizedTxt } from '../utils/helper'
+import { DocumentProcessorOptions, DirectoryProcessOptions, ParsedProcessorResult } from '../types'
+import { postProcessing } from '../utils/helper'
 
 class DocumentProcessor extends Processor {
-  private extractor: Extractor
-  private llmProcessor?: DocumentProcessorOptions['llmProcessor']
+  private processor: DocumentProcessorOptions['processor']
   private outputJsonPath?: string
-  private outputRawTxtPath?: string
-  private outputSanitizedTxtPath?: string
 
   constructor(options: DocumentProcessorOptions) {
     super(options)
-    this.extractor = options.extractor
-    this.llmProcessor = options.llmProcessor
+    this.processor = options.processor
     this.outputJsonPath = options.outputJsonPath
-    this.outputRawTxtPath = options.outputRawTxtPath
-    this.outputSanitizedTxtPath = options.outputSanitizedTxtPath
   }
 
   async process(filePath: string): Promise<ParsedProcessorResult> {
@@ -28,55 +20,27 @@ class DocumentProcessor extends Processor {
         console.log('Processing:', path.basename(filePath))
       }
 
-      const extractionResult = await this.extractor.extract(filePath, {
-        pages: true,
-      })
+      const result = await this.processor.process(filePath)
 
-      const { text, pages } = extractionResult
+      if (result.success && result.data) {
+        result.data = postProcessing(result.data)
 
-      if (this.debug) {
-        console.log('\n=== Raw extracted ===')
-        if (pages) {
-          pages.forEach((page) => {
-            console.log(`\n--- Page ${page.pageNumber} ---`)
-            console.log(page.text)
-          })
-        } else {
-          console.log(text)
-        }
-        console.log('===================\n')
-      }
-
-      saveRawTxt(this.outputRawTxtPath, filePath, text)
-
-      if (this.llmProcessor) {
-        const fullText = pages ? pages.map((page) => page.text).join('\n\n') : text
-
-        const sanitizedResult = await this.llmProcessor.sanitize(sanitizePrompt({ textToSanitize: fullText }))
-
-        if (!sanitizedResult.success || !sanitizedResult.data) {
-          return {
-            success: false,
-            error: sanitizedResult.error || 'Sanitization failed',
+        if (this.outputJsonPath) {
+          // Create output directory if it doesn't exist
+          if (!fs.existsSync(this.outputJsonPath)) {
+            fs.mkdirSync(this.outputJsonPath, { recursive: true })
           }
+
+          // Get the original filename without extension and create the output path
+          const originalName = path.basename(filePath, path.extname(filePath))
+          const outputFilePath = path.join(this.outputJsonPath, `${originalName}.json`)
+
+          // Save the JSON file
+          fs.writeFileSync(outputFilePath, JSON.stringify(result.data, null, 2))
         }
-
-        saveSanitizedTxt(this.outputSanitizedTxtPath, filePath, sanitizedResult.data)
-
-        const parsedResult = await this.llmProcessor.parse(parsePrompt({ cvTextData: sanitizedResult.data }))
-
-        if (parsedResult.success && parsedResult.data) {
-          parsedResult.data = postProcessing(parsedResult.data)
-          saveJson(this.outputJsonPath, filePath, parsedResult.data)
-        }
-
-        return parsedResult
       }
 
-      return {
-        success: false,
-        error: 'LLM processor not configured',
-      }
+      return result
     } catch (error) {
       return {
         success: false,

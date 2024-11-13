@@ -1,13 +1,13 @@
 # CV PDF to JSON
 
-Extract and process CV data from PDF files with Claude AI integration. This library provides a robust pipeline for converting PDF resumes into structured JSON data, with intermediate text processing steps.
+Extract and process CV data from PDF files with Claude AI's native PDF support. This library provides a robust pipeline for converting PDF resumes into structured JSON data.
 
 ## Features
 
-- Text sanitization using Claude AI
-- Structured JSON output of CV data using Claude AI
+- Direct PDF processing using Claude AI's native PDF support
+- Structured JSON output of CV data
 - Support for processing single PDF file or directory of PDF files
-- Support for saving raw, sanitized, and structured JSON outputs to specified directories
+- Support for saving structured JSON outputs
 - Debug mode for detailed processing insights
 
 ## Installation
@@ -25,6 +25,7 @@ import path from 'path'
 // Initialize the PDF extractor
 const extractor = createPdfExtractor({
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+  outputJsonPath: './outputs/json',
 })
 
 // Process a single file
@@ -43,7 +44,6 @@ For more control over the extraction process, you can use individual components:
 ```typescript
 import {
   DocumentProcessor,
-  PdfParseExtractor,
   ClaudeProcessor,
   type CvData,
   type Experience,
@@ -53,48 +53,32 @@ import {
   LanguageLevel,
 } from '@racsodev/cv-pdf-to-json'
 
-// Initialize PDF extractor
-const pdfExtractor = new PdfParseExtractor()
-
-// Initialize Claude AI processor
-const llmProcessor = new ClaudeProcessor({
+// Initialize Claude AI processor with native PDF support
+const processor = new ClaudeProcessor({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 })
 
-// Create custom document processor
-const processor = new DocumentProcessor({
-  extractor: pdfExtractor,
-  llmProcessor,
+// Create document processor
+const documentProcessor = new DocumentProcessor({
+  processor,
   outputJsonPath: './outputs/json',
-  outputRawTxtPath: './outputs/raw',
-  outputSanitizedTxtPath: './outputs/sanitized',
   debug: true,
 })
 
-// Custom processing pipeline
-async function customProcessCV(pdfPath: string) {
-  // Extract text from PDF
-  const extractionResult = await pdfExtractor.extract(pdfPath, { pages: true })
+// Process CV
+async function processCV(pdfPath: string) {
+  const result = await documentProcessor.process(pdfPath)
 
-  // Sanitize the extracted text
-  const sanitizedResult = await llmProcessor.sanitize(sanitizePrompt({ textToSanitize: extractionResult.text }))
-
-  if (!sanitizedResult.success || !sanitizedResult.data) {
-    return { success: false, error: 'Sanitization failed' }
+  if (result.success && result.data) {
+    const cvData: CvData = result.data
+    console.log('Extracted CV Data:', cvData)
   }
 
-  // Parse the sanitized text into structured data
-  const parsedResult = await llmProcessor.parse(parsePrompt({ cvTextData: sanitizedResult.data }))
-
-  return parsedResult
+  return result
 }
 
-// Use the custom pipeline
-const result = await customProcessCV('path/to/cv.pdf')
-if (result.success && result.data) {
-  const cvData: CvData = result.data
-  console.log('Extracted CV Data:', cvData)
-}
+// Use the processor
+const result = await processCV('path/to/cv.pdf')
 ```
 
 ## Output Format
@@ -201,21 +185,17 @@ ANTHROPIC_API_KEY=your_api_key_here
 npm run process <file-path>
 ```
 
-This will process the specified PDF file or directory and generate outputs in the configured directories.
+This will process the specified PDF file or directory and generate JSON outputs in the configured directory.
 
 ## Project Structure
 
 - `src/` - Source code directory
-  - `extractors/` - PDF text extraction implementations
-    - `Extractor.ts` - Base extractor class
-    - `PdfParseExtractor.ts` - PDF-parse based extractor
   - `processors/` - Document processing pipeline
     - `Processor.ts` - Base processor class
     - `DocumentProcessor.ts` - Main document processing logic
-    - `ClaudeProcessor.ts` - Claude AI integration
-    - `LLMProcessor.ts` - Language model processor interface
+    - `ClaudeProcessor.ts` - Claude AI integration with native PDF support
   - `types/` - TypeScript type definitions
-  - `utils/` - Utility functions for text processing and file handling
+  - `utils/` - Utility functions for data processing and file handling
 
 ## Requirements
 

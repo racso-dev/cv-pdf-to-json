@@ -1,8 +1,6 @@
 export interface ProcessorOptions {
   debug?: boolean
   outputJsonPath?: string
-  outputRawTxtPath?: string
-  outputSanitizedTxtPath?: string
 }
 
 export enum ContractType {
@@ -90,36 +88,14 @@ export interface ProcessorResult<T> {
   error?: string | Error
 }
 
-export type SanitizedProcessorResult = ProcessorResult<string>
 export type ParsedProcessorResult = ProcessorResult<CvData>
 
-export interface ExtractorOptions {
-  pages?: boolean
-}
-
-export interface PageData {
-  pageNumber: number
-  text: string
-}
-
-export interface ExtractionResult {
-  text: string
-  pages?: PageData[]
-}
-
-export interface LLMProcessor {
-  sanitize(text: string): Promise<SanitizedProcessorResult>
-  parse(text: string): Promise<ParsedProcessorResult>
-}
-
-export interface Extractor {
-  extract(filePath: string, options?: ExtractorOptions): Promise<ExtractionResult>
-  getName(): string
+export interface PdfProcessor {
+  process(pdfPath: string, outputPath?: string): Promise<ParsedProcessorResult>
 }
 
 export interface DocumentProcessorOptions extends ProcessorOptions {
-  extractor: Extractor
-  llmProcessor?: LLMProcessor
+  processor: PdfProcessor
 }
 
 export interface DirectoryProcessOptions {

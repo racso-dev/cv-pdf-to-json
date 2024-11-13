@@ -24,8 +24,6 @@ async function main() {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
     debug: true,
     outputJsonPath: path.join(__dirname, '../outputs/jsons'),
-    outputRawTxtPath: path.join(__dirname, '../outputs/raw'),
-    outputSanitizedTxtPath: path.join(__dirname, '../outputs/sanitized'),
   })
 
   try {

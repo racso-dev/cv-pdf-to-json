@@ -1,10 +1,12 @@
 import { Anthropic } from '@anthropic-ai/sdk'
-import LLMProcessor from './LLMProcessor'
-import { ProcessorResult, SanitizedProcessorResult, ParsedProcessorResult, CvData } from '../types'
+import fs from 'fs'
+import Processor from './Processor'
+import { ProcessorResult, CvData } from '../types'
 import { ClaudeProcessorOptions, ClaudeConfig, DEFAULT_CLAUDE_CONFIG } from '../types/claude'
 import { CvDataBuilder } from '../utils/CvDataBuilder'
+import { parsePrompt } from '../utils/parsePrompt'
 
-class ClaudeProcessor extends LLMProcessor {
+class ClaudeProcessor extends Processor<CvData> {
   private anthropic: Anthropic
   private config: ClaudeConfig
 
@@ -18,16 +20,6 @@ class ClaudeProcessor extends LLMProcessor {
       apiKey: options.apiKey,
       ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
     })
-  }
-
-  private extractSanitizedText(response: string): {
-    text: string
-    shouldContinueCmd: boolean
-  } {
-    const sanitizedMatch = response.match(/<sanitized_text>([\s\S]*?)<\/sanitized_text>/)
-    const sanitizedText = sanitizedMatch ? sanitizedMatch[1].trim() : ''
-    const shouldContinueCmd = response.includes('<continue_cmd/>') && !response.includes('<end_cmd/>')
-    return { text: sanitizedText, shouldContinueCmd }
   }
 
   private extractCvPartialData(response: string): {
@@ -49,26 +41,53 @@ class ClaudeProcessor extends LLMProcessor {
     throw new Error('No CV JSON or partial data found in response')
   }
 
-  private async processWithClaude(prompt: string, maxIterations: number): Promise<{ role: 'assistant'; content: string }[]> {
-    const messageHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
+  private async processWithClaude(pdfPath: string, maxIterations: number): Promise<{ role: 'assistant'; content: string }[]> {
+    const messageHistory: Array<{ role: 'user' | 'assistant'; content: any[] }> = []
     let shouldContinue: boolean
 
+    // Read the PDF file
+    const pdfContent = await fs.promises.readFile(pdfPath)
+    const pdfBase64 = pdfContent.toString('base64')
+
+    // Initial message with PDF and prompt
+    const initialPrompt = parsePrompt() // Empty cvTextData as we're using PDF directly
+
     do {
+      const content =
+        messageHistory.length === 0
+          ? [
+              {
+                type: 'document',
+                source: {
+                  media_type: 'application/pdf',
+                  type: 'base64',
+                  data: pdfBase64,
+                },
+                cache_control: { type: 'ephemeral' },
+              },
+              {
+                type: 'text',
+                text: initialPrompt,
+              },
+            ]
+          : [{ type: 'text', text: 'continue' }]
+
       messageHistory.push({
         role: 'user',
-        content: messageHistory.length === 0 ? prompt : 'continue',
+        content,
       })
 
-      const message = await this.anthropic.beta.promptCaching.messages.create({
+      const message = await this.anthropic.beta.messages.create({
         max_tokens: this.config.maxTokens,
-        messages: messageHistory,
         model: this.config.model,
         temperature: this.config.temperature,
+        messages: messageHistory as any,
+        betas: ['pdfs-2024-09-25', 'prompt-caching-2024-07-31'],
       })
 
       const textContent = message.content.find((block) => block.type === 'text')
       const rawResponse = textContent?.text || ''
-      messageHistory.push({ role: 'assistant', content: rawResponse })
+      messageHistory.push({ role: 'assistant', content: [{ type: 'text', text: rawResponse }] })
 
       if (this.debug) {
         console.log('\n=== Raw answer from Claude ===')
@@ -79,33 +98,12 @@ class ClaudeProcessor extends LLMProcessor {
       shouldContinue = rawResponse.includes('<continue_cmd/>') && !rawResponse.includes('<end_cmd/>')
     } while (messageHistory.length < maxIterations && shouldContinue)
 
-    return messageHistory.filter((msg) => msg.role === 'assistant') as { role: 'assistant'; content: string }[]
+    return messageHistory.filter((msg) => msg.role === 'assistant').map((msg) => ({ role: 'assistant' as const, content: msg.content[0].text }))
   }
 
-  async process<T>(text: string): Promise<ProcessorResult<T>> {
-    throw new Error('Use sanitize() or parse() methods instead of process()')
-  }
-
-  async sanitize(prompt: string): Promise<SanitizedProcessorResult> {
+  async process(pdfPath: string, outputPath?: string): Promise<ProcessorResult<CvData>> {
     try {
-      const responses = await this.processWithClaude(prompt, 10)
-      const sanitizedText = responses.map((msg) => this.extractSanitizedText(msg.content).text).join('')
-
-      return {
-        success: true,
-        data: sanitizedText,
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'An unknown error occurred',
-      }
-    }
-  }
-
-  async parse(prompt: string): Promise<ParsedProcessorResult> {
-    try {
-      const responses = await this.processWithClaude(prompt, 15)
+      const responses = await this.processWithClaude(pdfPath, 15)
       const builder = new CvDataBuilder()
 
       for (const response of responses) {
@@ -147,6 +145,10 @@ class ClaudeProcessor extends LLMProcessor {
           success: false,
           error: 'Failed to build complete CV data',
         }
+      }
+
+      if (outputPath) {
+        fs.writeFileSync(outputPath, JSON.stringify(cvData, null, 2))
       }
 
       return {

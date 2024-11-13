@@ -1,15 +1,11 @@
-interface parsePromptParams {
-  cvTextData: string
-}
-
-export const parsePrompt = ({ cvTextData }: parsePromptParams): string => `
+export const parsePrompt = (): string => `
 You are an advanced AI system specialized in analyzing and extracting structured information from Curriculum Vitae (CV) documents. Your task is to process the given CV text and convert it into a standardized JSON format. 
 
-Here is the CV text to analyze:
+Here is the base64 pdf CV to analyze:
 
-<cv_text>
-${cvTextData}
-</cv_text>
+<document>
+{{BASE64_PDF_CONTENT}}
+</document>
 
 Instructions:
 
