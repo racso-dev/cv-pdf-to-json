@@ -114,7 +114,6 @@ interface CvData {
 interface Experience {
   companyName?: string
   title?: string
-  roleName?: string
   location: string
   type: ContractType
   startDate: string

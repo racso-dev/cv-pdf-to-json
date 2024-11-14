@@ -36,7 +36,7 @@ Instructions:
      "professionalExperiences": [
        {
          "companyName": "Company name",
-         "roleName": "Job title",
+         "title": "Job title",
          "location": "Work location",
          "type": "Experience type (use ContractType enum)",
          "startDate": "Start date",
