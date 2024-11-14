@@ -8,22 +8,22 @@ const dateFormats: Record<number, string> = {
   3: 'YYYY-MM-DD',
 }
 
-const getLastDayOfMonth = (year: number, month: number): Date => {
-  return new Date(Date.UTC(year, month + 1, 0))
+const getLastDayOfMonth = (year: number, month: number): number => {
+  return Date.UTC(year, month + 1, 0)
 }
 
-const getFirstDayOfMonth = (year: number, month: number): Date => {
-  return new Date(Date.UTC(year, month, 1))
+const getFirstDayOfMonth = (year: number, month: number): number => {
+  return Date.UTC(year, month, 1)
 }
 
-const getFirstDayOfYear = (year: number): Date => {
-  return new Date(Date.UTC(year, 0, 1))
+const getFirstDayOfYear = (year: number): number => {
+  return Date.UTC(year, 0, 1)
 }
 
-const parseDateString = (dateStr: string, isEndDate: boolean, format?: string): Date => {
+const parseDateString = (dateStr: string, isEndDate: boolean, format?: string): number => {
   // Handle empty or invalid dates
   if (!dateStr) {
-    return new Date()
+    return Date.now()
   }
 
   const parts = dateStr.split('-')
@@ -38,13 +38,13 @@ const parseDateString = (dateStr: string, isEndDate: boolean, format?: string): 
     // Format: YYYY-MM-DD
     const month = parseInt(parts[1], 10) - 1
     const day = parseInt(parts[2], 10)
-    return new Date(Date.UTC(year, month, day))
+    return Date.UTC(year, month, day)
   }
 }
 
-const calculateDurationInMonths = (startDate: Date, endDate: Date, format: string): number => {
-  const start = new Date(startDate)
-  const end = new Date(endDate)
+const calculateDurationInMonths = (startTimestamp: number, endTimestamp: number, format: string): number => {
+  const start = new Date(startTimestamp)
+  const end = new Date(endTimestamp)
 
   // Calculate years difference
   const yearsDiff = end.getUTCFullYear() - start.getUTCFullYear()
@@ -86,7 +86,7 @@ const processItem = (item: any): any => {
     processedItem.duration = calculateDurationInMonths(processedItem.startDate, processedItem.endDate, formatOfEndDate)
   } else if (processedItem.startDate) {
     // Calculate duration until now if only start date is present
-    processedItem.duration = calculateDurationInMonths(processedItem.startDate, new Date(), formatOfStartDate)
+    processedItem.duration = calculateDurationInMonths(processedItem.startDate, Date.now(), formatOfStartDate)
   }
 
   return processedItem

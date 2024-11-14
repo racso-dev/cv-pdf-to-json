@@ -33,8 +33,9 @@ export interface Experience {
   title?: string
   location: string
   type: ContractType
-  startDate: string
-  endDate: string
+  startDate: number
+  endDate: number
+  duration: number // in months
   ongoing: boolean
   description: string
   associatedSkills: string[]
@@ -44,8 +45,9 @@ export interface Education {
   degree: string
   institution: string
   location: string
-  startDate: string
-  endDate: string
+  startDate: number
+  endDate: number
+  duration: number // in months
   ongoing: boolean
   description: string
   associatedSkills: string[]

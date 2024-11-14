@@ -116,29 +116,37 @@ interface Experience {
   title?: string
   location: string
   type: ContractType
-  startDate: string
-  endDate: string
+  startDate: number
+  endDate: number
+  duration: number // in months
   ongoing: boolean
   description: string
   associatedSkills: string[]
-  duration: number
 }
 
 interface Education {
   degree: string
   institution: string
   location: string
-  startDate: string
-  endDate: string
+  startDate: number
+  endDate: number
+  duration: number // in months
   ongoing: boolean
   description: string
   associatedSkills: string[]
-  duration: number
 }
 
 interface Language {
   language: string
   level: LanguageLevel
+}
+
+enum LanguageLevel {
+  BASIC_KNOWLEDGE = 'BASIC_KNOWLEDGE',
+  LIMITED_PROFESSIONAL = 'LIMITED_PROFESSIONAL',
+  PROFESSIONAL = 'PROFESSIONAL',
+  FULL_PROFESSIONAL = 'FULL_PROFESSIONAL',
+  NATIVE_BILINGUAL = 'NATIVE_BILINGUAL',
 }
 
 enum ContractType {
@@ -148,15 +156,14 @@ enum ContractType {
   FIXED_TERM_CONTRACT = 'FIXED_TERM_CONTRACT',
   INTERNSHIP = 'INTERNSHIP',
   APPRENTICESHIP = 'APPRENTICESHIP',
-  // ... other contract types
-}
-
-enum LanguageLevel {
-  BASIC_KNOWLEDGE = 'BASIC_KNOWLEDGE',
-  LIMITED_PROFESSIONAL = 'LIMITED_PROFESSIONAL',
-  PROFESSIONAL = 'PROFESSIONAL',
-  FULL_PROFESSIONAL = 'FULL_PROFESSIONAL',
-  NATIVE_BILINGUAL = 'NATIVE_BILINGUAL',
+  PERFORMING_ARTS_INTERMITTENT = 'PERFORMING_ARTS_INTERMITTENT',
+  PART_TIME_PERMANENT = 'PART_TIME_PERMANENT',
+  CIVIC_SERVICE = 'CIVIC_SERVICE',
+  PART_TIME_FIXED_TERM = 'PART_TIME_FIXED_TERM',
+  SUPPORTED_EMPLOYMENT = 'SUPPORTED_EMPLOYMENT',
+  CIVIL_SERVANT = 'CIVIL_SERVANT',
+  TEMPORARY_WORKER = 'TEMPORARY_WORKER',
+  ASSOCIATIVE = 'ASSOCIATIVE',
 }
 ```
 
