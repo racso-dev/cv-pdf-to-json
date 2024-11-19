@@ -20,10 +20,10 @@ const getFirstDayOfYear = (year: number): number => {
   return Date.UTC(year, 0, 1)
 }
 
-const parseDateString = (dateStr: string, isEndDate: boolean, format?: string): number => {
+const parseDateString = (dateStr: string, isEndDate: boolean, format?: string): number | null => {
   // Handle empty or invalid dates
   if (!dateStr) {
-    return Date.now()
+    return null
   }
 
   const parts = dateStr.split('-')
@@ -70,15 +70,31 @@ const processItem = (item: any): any => {
   const processedItem = { ...item }
   const startDate = processedItem.startDate as string
   const endDate = processedItem.endDate as string
-  const formatOfStartDate = dateFormats[startDate.split('-').length || 0]
-  const formatOfEndDate = dateFormats[endDate.split('-').length || 0]
+  const formatOfStartDate = dateFormats[startDate?.split('-').length || 0]
+  const formatOfEndDate = dateFormats[endDate?.split('-').length || 0]
 
-  if (processedItem.startDate) {
-    processedItem.startDate = parseDateString(processedItem.startDate, false, formatOfStartDate)
+  // Process startDate
+  if (startDate) {
+    const parsedStartDate = parseDateString(startDate, false, formatOfStartDate)
+    if (parsedStartDate !== null) {
+      processedItem.startDate = parsedStartDate
+    } else {
+      delete processedItem.startDate
+    }
+  } else {
+    delete processedItem.startDate
   }
 
-  if (processedItem.endDate) {
-    processedItem.endDate = parseDateString(processedItem.endDate, true, formatOfEndDate)
+  // Process endDate
+  if (endDate) {
+    const parsedEndDate = parseDateString(endDate, true, formatOfEndDate)
+    if (parsedEndDate !== null) {
+      processedItem.endDate = parsedEndDate
+    } else {
+      delete processedItem.endDate
+    }
+  } else {
+    delete processedItem.endDate
   }
 
   // Calculate duration if both dates are present
