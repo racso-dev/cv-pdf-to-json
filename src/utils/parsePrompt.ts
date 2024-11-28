@@ -23,6 +23,7 @@ Instructions:
    {
      "lastName": "Candidate's last name (first letter capitalized)",
      "firstName": "Candidate's first name (first letter capitalized)",
+     "jobTitle": "Candidate's job title (first letter capitalized)",
      "address": "Complete postal address",
      "email": "Email address",
      "phone": "Phone number",
@@ -119,6 +120,7 @@ Instructions:
           NATIVE_BILINGUAL = 'NATIVE_BILINGUAL'                            // 'native', 'bilingual', 'mother tongue', 'native speaker', 'first language', 'native proficiency', 'bilingual proficiency', 'native-level mastery', 'primary language', 'native or bilingual'
       }
    k. For links (LinkedIn, GitHub, personal website), always include the full valid URL, starting with "https://". If not provided, leave the field blank.
+   l. For job title, extract it from the CV if it's explicitly stated, otherwise try to infer it from the professional experiences.
 
 4. Processing:
    a. Process the CV in large, logical chunks to avoid data duplication.

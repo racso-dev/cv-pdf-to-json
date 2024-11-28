@@ -116,7 +116,7 @@ class ClaudeProcessor extends Processor<CvData> {
         if ('linkedin' in partialData || 'github' in partialData || 'personalWebsite' in partialData) {
           builder.withSocialLinks(partialData as any)
         }
-        if ('professionalSummary' in partialData) {
+        if ('professionalSummary' in partialData || 'jobTitle' in partialData) {
           builder.withProfessionalInfo(partialData as any)
         }
         if ('school' in partialData) {

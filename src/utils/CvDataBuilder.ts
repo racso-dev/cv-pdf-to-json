@@ -11,6 +11,7 @@ export class CvDataBuilder {
     github: '',
     personalWebsite: '',
     professionalSummary: '',
+    jobTitle: '',
     school: '',
     schoolLowerCase: '',
     promotionYear: 0,
@@ -52,7 +53,7 @@ export class CvDataBuilder {
     return this
   }
 
-  withProfessionalInfo(info: Pick<CvData, 'professionalSummary'>) {
+  withProfessionalInfo(info: Pick<CvData, 'professionalSummary' | 'jobTitle'>) {
     Object.assign(this.data, info)
     return this
   }

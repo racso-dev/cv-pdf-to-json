@@ -96,6 +96,7 @@ interface CvData {
   github: string
   personalWebsite: string
   professionalSummary: string
+  jobTitle: string
   school: string
   schoolLowerCase: string
   promotionYear: number
