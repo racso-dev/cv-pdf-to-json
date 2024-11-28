@@ -58,6 +58,12 @@ export interface Language {
   level: LanguageLevel
 }
 
+export interface Certification {
+  title: string
+  issuer: string
+  issuedDate: number
+}
+
 export interface CvData {
   lastName: string
   firstName: string
@@ -82,6 +88,7 @@ export interface CvData {
   distinctions: string[]
   hobbies: string[]
   references: string[]
+  certifications: Certification[]
 }
 
 export interface ProcessorResult<T> {

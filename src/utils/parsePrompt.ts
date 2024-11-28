@@ -82,7 +82,14 @@ Instructions:
      "publications": ["Publications or articles"],
      "distinctions": ["Awards or distinctions"],
      "hobbies": ["Hobbies, interests, or passions"],
-     "references": ["Professional references"]
+     "references": ["Professional references"],
+     "certifications": [
+       {
+         "title": "Certification title",
+         "issuer": "Issuing organization or institution",
+         "issuedDate": "Issue date in YYYY format (number type)"
+       }
+     ]
    }
 
 3. Extraction Rules:
@@ -121,6 +128,11 @@ Instructions:
       }
    k. For links (LinkedIn, GitHub, personal website), always include the full valid URL, starting with "https://". If not provided, leave the field blank.
    l. For job title, extract it from the CV if it's explicitly stated, otherwise try to infer it from the professional experiences.
+   m. For certifications:
+      - Extract the title exactly as written in the CV
+      - Include the issuing organization or institution
+      - Use only the year (YYYY) for issuedDate as a number type
+      - If any of these fields are not available, exclude the entire certification entry
 
 4. Processing:
    a. Process the CV in large, logical chunks to avoid data duplication.

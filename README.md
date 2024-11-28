@@ -110,6 +110,13 @@ interface CvData {
   distinctions: string[]
   hobbies: string[]
   references: string[]
+  certifications: Certification[]
+}
+
+interface Certification {
+  title: string
+  issuer: string
+  issuedDate: number
 }
 
 interface Experience {

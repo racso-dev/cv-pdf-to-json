@@ -1,4 +1,4 @@
-import { CvData, Experience, Education, Language } from '../types'
+import { CvData, Experience, Education, Language, Certification } from '../types'
 
 export class CvDataBuilder {
   private data: CvData = {
@@ -25,6 +25,7 @@ export class CvDataBuilder {
     distinctions: [],
     hobbies: [],
     references: [],
+    certifications: [],
   }
 
   private deduplicateArray<T>(arr: T[]): T[] {
@@ -98,6 +99,11 @@ export class CvDataBuilder {
     if (info.references) {
       this.data.references = this.deduplicateArray([...this.data.references, ...info.references])
     }
+    return this
+  }
+
+  withCertifications(certifications: Certification[]) {
+    this.data.certifications = this.deduplicateObjectArray([...this.data.certifications, ...certifications])
     return this
   }
 
