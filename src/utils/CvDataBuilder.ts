@@ -26,6 +26,9 @@ export class CvDataBuilder {
     hobbies: [],
     references: [],
     certifications: [],
+    totalProfessionalExperience: 0,
+    totalOtherExperience: 0,
+    totalEducation: 0,
   }
 
   private deduplicateArray<T>(arr: T[]): T[] {

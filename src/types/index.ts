@@ -89,6 +89,9 @@ export interface CvData {
   hobbies: string[]
   references: string[]
   certifications: Certification[]
+  totalProfessionalExperience: number
+  totalOtherExperience: number
+  totalEducation: number
 }
 
 export interface ProcessorResult<T> {

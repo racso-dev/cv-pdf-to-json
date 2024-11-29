@@ -63,6 +63,10 @@ const calculateDurationInMonths = (startTimestamp: number, endTimestamp: number,
   return duration
 }
 
+const calculateTotalDurationOf = (elements: any[]): number => {
+  return elements.reduce((total, element) => total + (element.duration || 0), 0)
+}
+
 const processItem = (item: any): any => {
   if (!item) return item
 
@@ -97,12 +101,13 @@ const processItem = (item: any): any => {
     delete processedItem.endDate
   }
 
-  // Calculate duration if both dates are present
-  if (processedItem.startDate && processedItem.endDate) {
-    processedItem.duration = calculateDurationInMonths(processedItem.startDate, processedItem.endDate, formatOfEndDate)
-  } else if (processedItem.startDate) {
-    // Calculate duration until now if only start date is present
-    processedItem.duration = calculateDurationInMonths(processedItem.startDate, Date.now(), formatOfStartDate)
+  // Calculate duration only if not already set
+  if (processedItem.duration === null) {
+    if (processedItem.startDate && processedItem.endDate) {
+      processedItem.duration = calculateDurationInMonths(processedItem.startDate, processedItem.endDate, formatOfEndDate)
+    } else if (processedItem.startDate) {
+      processedItem.duration = calculateDurationInMonths(processedItem.startDate, Date.now(), formatOfStartDate)
+    }
   }
 
   return processedItem
@@ -111,14 +116,17 @@ const processItem = (item: any): any => {
 export const postProcessing = (data: any): any => {
   if (data.professionalExperiences) {
     data.professionalExperiences = data.professionalExperiences.map(processItem)
+    data.totalProfessionalExperience = calculateTotalDurationOf(data.professionalExperiences)
   }
 
   if (data.otherExperiences) {
     data.otherExperiences = data.otherExperiences.map(processItem)
+    data.totalOtherExperience = calculateTotalDurationOf(data.otherExperiences)
   }
 
   if (data.educations) {
     data.educations = data.educations.map(processItem)
+    data.totalEducation = calculateTotalDurationOf(data.educations)
   }
 
   return data

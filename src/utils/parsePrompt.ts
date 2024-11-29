@@ -44,7 +44,8 @@ Instructions:
          "endDate": "End date or empty string if ongoing",
          "ongoing": true, // or false
          "description": "Full description in Markdown format, extracted verbatim",
-         "associatedSkills": ["Skills associated with this experience, only if explicitly listed in a dedicated skills section"]
+         "associatedSkills": ["Skills associated with this experience, only if explicitly listed in a dedicated skills section"],
+         "duration": null, // Durée en mois si explicitement mentionnée dans le CV, sinon null
        }
      ],
      "otherExperiences": [
@@ -56,7 +57,8 @@ Instructions:
          "endDate": "End date or empty string if ongoing",
          "ongoing": true, // or false
          "description": "Full description in Markdown format, extracted verbatim",
-         "associatedSkills": ["Skills associated with this experience, only if explicitly listed in a dedicated skills section"]
+         "associatedSkills": ["Skills associated with this experience, only if explicitly listed in a dedicated skills section"],
+         "duration": null, // Durée en mois si explicitement mentionnée dans le CV, sinon null
        }
      ],
      "educations": [
@@ -68,7 +70,8 @@ Instructions:
          "endDate": "End date or empty string if ongoing",
          "ongoing": true, // or false
          "description": "Full description in Markdown format, extracted verbatim",
-         "associatedSkills": ["Skills associated with this education, only if explicitly listed in a dedicated skills section"]
+         "associatedSkills": ["Skills associated with this education, only if explicitly listed in a dedicated skills section"],
+         "duration": null, // Durée en mois si explicitement mentionnée dans le CV, sinon null
        }
      ],
      "hardSkills": ["Technical skills, only if explicitly listed in a dedicated skills section"],
@@ -133,6 +136,10 @@ Instructions:
       - Include the issuing organization or institution
       - Use only the year (YYYY) for issuedDate as a number type
       - If any of these fields are not available, exclude the entire certification entry
+   n. Pour la durée (duration):
+      - Si la durée est explicitement mentionnée dans le CV (par exemple "18 mois", "2 ans", etc.), la convertir en nombre de mois
+      - Si la durée n'est pas explicitement mentionnée, mettre la valeur à null
+      - Ne pas calculer ou inférer la durée à partir des dates
 
 4. Processing:
    a. Process the CV in large, logical chunks to avoid data duplication.
