@@ -86,7 +86,7 @@ const result = await processCV('path/to/cv.pdf')
 The processor returns data in the following format:
 
 ```typescript
-interface CvData {
+export interface CvData {
   lastName: string
   firstName: string
   address: string
@@ -111,6 +111,9 @@ interface CvData {
   hobbies: string[]
   references: string[]
   certifications: Certification[]
+  totalProfessionalExperience: number
+  totalOtherExperience: number
+  totalEducation: number
 }
 
 interface Certification {
